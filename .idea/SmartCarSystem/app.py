@@ -14,7 +14,10 @@ from recognition import time_detected
 from motorControl import start_motor
 from motorControl import stop_motor
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    template_folder='Website'
+)
 
 face_result = {
     "authorized": False,
