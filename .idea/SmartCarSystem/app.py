@@ -11,8 +11,8 @@ from recognition import detected_name
 from recognition import status
 from recognition import time_detected
 
-from motor_control import start_motor
-from motor_control import stop_motor
+from motorControl import start_motor
+from motorControl import stop_motor
 
 app = Flask(__name__)
 

@@ -1,23 +1,21 @@
 import cv2
-import face_recognition
 from datetime import datetime
 
-# Load authorized face
-known_image = face_recognition.load_image_file(
-    "authorized_faces/driver.jpg"
+camera = cv2.VideoCapture(0)
+
+face_detector = cv2.CascadeClassifier(
+    cv2.data.haarcascades +
+    "haarcascade_frontalface_default.xml"
 )
 
-known_encoding = face_recognition.face_encodings(
-    known_image
-)[0]
+recognizer = cv2.face.LBPHFaceRecognizer_create()
 
-camera = cv2.VideoCapture(0)
+recognizer.read("trainer.yml")
 
 authorized = False
 detected_name = "Unknown"
 status = "Waiting"
 time_detected = ""
-unknown_frame = None
 
 
 def scan_face():
@@ -26,43 +24,51 @@ def scan_face():
     global detected_name
     global status
     global time_detected
-    global unknown_frame
 
     ret, frame = camera.read()
 
-    rgb_frame = frame[:, :, ::-1]
-
-    face_locations = face_recognition.face_locations(
-        rgb_frame
+    gray = cv2.cvtColor(
+        frame,
+        cv2.COLOR_BGR2GRAY
     )
 
-    face_encodings = face_recognition.face_encodings(
-        rgb_frame,
-        face_locations
+    faces = face_detector.detectMultiScale(
+        gray,
+        scaleFactor=1.2,
+        minNeighbors=5
     )
 
     authorized = False
 
-    for face_encoding in face_encodings:
+    for (x, y, w, h) in faces:
 
-        matches = face_recognition.compare_faces(
-            [known_encoding],
-            face_encoding
+        id, confidence = recognizer.predict(
+            gray[y:y+h, x:x+w]
         )
 
-        if True in matches:
+        if confidence < 60:
 
             authorized = True
+
             detected_name = "Authorized Driver"
+
             status = "ACCESS GRANTED"
 
         else:
 
             authorized = False
+
             detected_name = "Unknown Driver"
+
             status = "ACCESS DENIED"
 
-            unknown_frame = frame.copy()
+        cv2.rectangle(
+            frame,
+            (x,y),
+            (x+w,y+h),
+            (0,255,0),
+            2
+        )
 
     time_detected = datetime.now().strftime(
         "%H:%M:%S"
@@ -85,16 +91,16 @@ def generate_frames():
         if not success:
             break
 
-        else:
+        ret, buffer = cv2.imencode(
+            '.jpg',
+            frame
+        )
 
-            ret, buffer = cv2.imencode(
-                '.jpg',
-                frame
-            )
+        frame = buffer.tobytes()
 
-            frame = buffer.tobytes()
-
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' +
-                   frame +
-                   b'\r\n')
+        yield (
+                b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' +
+                frame +
+                b'\r\n'
+        )
