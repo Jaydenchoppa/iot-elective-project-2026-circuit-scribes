@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Vehicle System</title>
+    <style>
+        body{
+            font-family: Arial;
+            text-align: center;
+            background: #f2f2f2;
+        }
+
+        img{
+            width: 600px;
+            border-radius: 10px;
+        }
+
+        button{
+            padding: 12px 20px;
+            margin: 10px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        #status{
+            font-size: 22px;
+            margin-top: 20px;
+        }
+
+    </style>
+</head>
+<body>
+<h1>SMART VEHICLE AUTHENTICATION</h1>
+<img src="/video_feed">
+<br>
+<button onclick="scanFace()">Scan Face</button>
+
+<button
+        id="startButton"
+        onclick="startMotor()"
+        disabled>
+    Start Motor
+</button>
+
+<button onclick="stopMotor()">
+    Stop Motor
+</button>
+
+<div id="status">
+
+    <p>Detected User:
+        <span id="name">
+                None
+            </span>
+    </p>
+
+    <p>Status:
+        <span id="access">
+                Waiting
+            </span>
+    </p>
+
+    <p>Time:
+        <span id="time">
+                --
+            </span>
+    </p>
+
+</div>
+
+<script>
+    async function scanFace(){
+
+        const response = await fetch(
+            '/scan_face',
+            {
+                method:'POST'
+            }
+        )
+
+        const data = await response.json()
+
+        document.getElementById(
+            'name'
+        ).innerText = data.name
+
+        document.getElementById(
+            'access'
+        ).innerText = data.status
+
+        document.getElementById(
+            'time'
+        ).innerText = data.time
+
+        if(data.authorized){
+
+            document.getElementById(
+                'startButton'
+            ).disabled = false
+
+        }else{
+
+            document.getElementById(
+                'startButton'
+            ).disabled = true
+        }
+    }
+
+    async function startMotor(){
+        const response = await fetch(
+            '/start_motor',
+            {
+                method:'POST'
+            }
+        )
+        const data = await response.json()
+
+        alert(data.message)
+    }
+
+    async function stopMotor(){
+
+        const response = await fetch(
+            '/stop_motor',
+            {
+                method:'POST'
+            }
+        )
+
+        const data = await response.json()
+
+        alert(data.message)
+    }
+</script>
+
+</body>
+</html>
