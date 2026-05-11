@@ -1,134 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Smart Vehicle System</title>
+    <title>Smart Car</title>
     <style>
-        body{
-            font-family: Arial;
-            text-align: center;
-            background: #f2f2f2;
-        }
-
-        img{
-            width: 600px;
-            border-radius: 10px;
-        }
-
-        button{
-            padding: 12px 20px;
-            margin: 10px;
-            font-size: 18px;
-            cursor: pointer;
-        }
-
-        #status{
-            font-size: 22px;
-            margin-top: 20px;
-        }
-
+        body { font-family: Arial; text-align: center; background: #f2f2f2; }
+        img  { width: 600px; border-radius: 10px; }
+        button { padding: 12px 20px; margin: 10px; font-size: 18px; cursor: pointer; }
+        #info  { font-size: 22px; margin-top: 20px; }
     </style>
 </head>
 <body>
-<h1>SMART VEHICLE AUTHENTICATION</h1>
-<img src="/video_feed">
+
+<h1>Smart Car Login</h1>
+<img src="/live">
 <br>
-<button onclick="scanFace()">Scan Face</button>
 
-<button
-        id="startButton"
-        onclick="startMotor()"
-        disabled>
-    Start Motor
-</button>
+<button onclick="scan()">Scan Face</button>
+<button onclick="start()" id="startBtn" disabled>Start Motor</button>
+<button onclick="stop()">Stop Motor</button>
 
-<button onclick="stopMotor()">
-    Stop Motor
-</button>
-
-<div id="status">
-
-    <p>Detected User:
-        <span id="name">
-                None
-            </span>
-    </p>
-
-    <p>Status:
-        <span id="access">
-                Waiting
-            </span>
-    </p>
-
-    <p>Time:
-        <span id="time">
-                --
-            </span>
-    </p>
-
+<div id="info">
+    <p>Driver: <span id="who">None</span></p>
+    <p>Status: <span id="msg">Waiting</span></p>
+    <p>Time:   <span id="time">--</span></p>
 </div>
 
 <script>
-    async function scanFace(){
+    async function scan() {
+        const res  = await fetch('/scan', { method: 'POST' })
+        const data = await res.json()
 
-        const response = await fetch(
-            '/scan_face',
-            {
-                method:'POST'
-            }
-        )
+        document.getElementById('who').innerText  = data.who
+        document.getElementById('msg').innerText  = data.msg
+        document.getElementById('time').innerText = data.time
 
-        const data = await response.json()
-
-        document.getElementById(
-            'name'
-        ).innerText = data.name
-
-        document.getElementById(
-            'access'
-        ).innerText = data.status
-
-        document.getElementById(
-            'time'
-        ).innerText = data.time
-
-        if(data.authorized){
-
-            document.getElementById(
-                'startButton'
-            ).disabled = false
-
-        }else{
-
-            document.getElementById(
-                'startButton'
-            ).disabled = true
-        }
+        // Only unlock Start button if the driver is recognized
+        document.getElementById('startBtn').disabled = !data.allowed
     }
 
-    async function startMotor(){
-        const response = await fetch(
-            '/start_motor',
-            {
-                method:'POST'
-            }
-        )
-        const data = await response.json()
-
-        alert(data.message)
+    async function start() {
+        const res  = await fetch('/start', { method: 'POST' })
+        const data = await res.json()
+        alert(data.msg)
     }
 
-    async function stopMotor(){
-
-        const response = await fetch(
-            '/stop_motor',
-            {
-                method:'POST'
-            }
-        )
-
-        const data = await response.json()
-
-        alert(data.message)
+    async function stop() {
+        const res  = await fetch('/stop', { method: 'POST' })
+        const data = await res.json()
+        alert(data.msg)
     }
 </script>
 
