@@ -6,7 +6,7 @@ def stop():
     print("Motor Stopped")
 
 
-# --- Raspberry Pi version (uncomment to use) ---
+# Raspberry Pi Code
 # import RPi.GPIO as GPIO
 #
 # PIN = 18
@@ -38,4 +38,21 @@ def stop():
 #def stop():
     #GPIO.output(IN1, GPIO.LOW)
     #GPIO.output(IN2, GPIO.LOW)
+    #print("Motor Stopped")
+
+#** Code fir using only the relay not the L298N
+#import RPi.GPIO as GPIO
+
+#RELAY_PIN = 17
+
+#GPIO.setmode(GPIO.BCM)
+#GPIO.setup(RELAY_PIN, GPIO.OUT)
+#GPIO.output(RELAY_PIN, GPIO.LOW)
+
+#def start():
+    #GPIO.output(RELAY_PIN, GPIO.HIGH)
+    #print("Motor Started")
+
+#def stop():
+    #GPIO.output(RELAY_PIN, GPIO.LOW)
     #print("Motor Stopped")

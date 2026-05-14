@@ -1,5 +1,12 @@
 import cv2
 from datetime import datetime
+import RPi.GPIO as GPIO
+
+IR_PIN = 27  # IR LEDs moved to pin 27
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(IR_PIN, GPIO.OUT)
+GPIO.output(IR_PIN, GPIO.HIGH)  # turn LEDs on when camera starts
 
 # Open webcam and load face tools
 cam = cv2.VideoCapture(0)
