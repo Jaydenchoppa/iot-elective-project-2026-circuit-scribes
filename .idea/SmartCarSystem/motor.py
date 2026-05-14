@@ -20,22 +20,22 @@ def stop():
 #     GPIO.output(PIN, GPIO.LOW)
 
 # Code for the L298N
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 
 # L298N control pins
-IN1 = 23
-IN2 = 24
+#IN1 = 23
+#IN2 = 24
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(IN1, GPIO.OUT)
-GPIO.setup(IN2, GPIO.OUT)
+#GPIO.setmode(GPIO.BCM)
+#GPIO.setup(IN1, GPIO.OUT)
+#GPIO.setup(IN2, GPIO.OUT)
 
-def start():
-    GPIO.output(IN1, GPIO.HIGH)
-    GPIO.output(IN2, GPIO.LOW)
-    print("Motor Started")
+#def start():
+    #GPIO.output(IN1, GPIO.HIGH)
+    #GPIO.output(IN2, GPIO.LOW)
+    #print("Motor Started")
 
-def stop():
-    GPIO.output(IN1, GPIO.LOW)
-    GPIO.output(IN2, GPIO.LOW)
-    print("Motor Stopped")
+#def stop():
+    #GPIO.output(IN1, GPIO.LOW)
+    #GPIO.output(IN2, GPIO.LOW)
+    #print("Motor Stopped")
