@@ -38,7 +38,7 @@
 | Student Name | Student Number | Role / Responsibility |
 |---|---|---|
 | [Name Surname] | [Student No.] | [e.g. Hardware Lead] |
-| Jayden Avontuur | 222032278| Software Lead |
+| Jayden Avontuur | 222032278| Hardware Lead |
 | Mpumelelo Sithole | 230526934 | Documentation Lead |
 | [Name Surname] | [Student No.] | [e.g. Testing Lead] |
 
