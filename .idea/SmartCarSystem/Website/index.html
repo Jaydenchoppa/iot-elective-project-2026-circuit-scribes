@@ -7,47 +7,88 @@
         img  { width: 600px; border-radius: 10px; }
         button { padding: 12px 20px; margin: 10px; font-size: 18px; cursor: pointer; }
         #info  { font-size: 22px; margin-top: 20px; }
+        #msg   { font-weight: bold; }
+        .granted { color: green; }
+        .denied  { color: red; }
+
+        #startBtn {
+            background: green;
+            color: white;
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        #startBtn.unlocked {
+            opacity: 1;
+            cursor: pointer;
+        }
+        #stopBtn {
+            background: red;
+            color: white;
+        }
     </style>
 </head>
 <body>
 
-<h1>Smart Car Login</h1>
-<img src="/live">
+<h1>🚗 Smart Car Login</h1>
+<img src="/live?dummy=1">
 <br>
 
-<button onclick="scan()">Scan Face</button>
-<button onclick="start()" id="startBtn" disabled>Start Motor</button>
-<button onclick="stop()">Stop Motor</button>
+<button onclick="scan()">🔍 Scan Face</button>
+<button onclick="startEngine()" id="startBtn" disabled>🔑 Start Engine</button>
+<button onclick="stopEngine()" id="stopBtn">⛔ Stop Engine</button>
 
 <div id="info">
     <p>Driver: <span id="who">None</span></p>
-    <p>Status: <span id="msg">Waiting</span></p>
+    <p>Status: <span id="msg">Waiting for scan...</span></p>
     <p>Time:   <span id="time">--</span></p>
 </div>
 
 <script>
+    let authorised = false
+
     async function scan() {
+        document.getElementById('msg').innerText = "Scanning..."
+        document.getElementById('msg').className = ""
+
         const res  = await fetch('/scan', { method: 'POST' })
         const data = await res.json()
 
         document.getElementById('who').innerText  = data.who
         document.getElementById('msg').innerText  = data.msg
         document.getElementById('time').innerText = data.time
+        document.getElementById('msg').className  = data.allowed ? 'granted' : 'denied'
 
-        // Only unlock Start button if the driver is recognized
-        document.getElementById('startBtn').disabled = !data.allowed
+        // ✅ Only unlock Start button if face recognised
+        authorised = data.allowed
+        const btn = document.getElementById('startBtn')
+        if (authorised) {
+            btn.disabled = false
+            btn.classList.add('unlocked')
+        } else {
+            btn.disabled = true
+            btn.classList.remove('unlocked')
+        }
     }
 
-    async function start() {
+    async function startEngine() {
+        if (!authorised) return  // extra safety check
         const res  = await fetch('/start', { method: 'POST' })
         const data = await res.json()
-        alert(data.msg)
+        document.getElementById('msg').innerText = data.msg
+        document.getElementById('msg').className = 'granted'
     }
 
-    async function stop() {
+    async function stopEngine() {
         const res  = await fetch('/stop', { method: 'POST' })
         const data = await res.json()
-        alert(data.msg)
+        document.getElementById('msg').innerText = data.msg
+        document.getElementById('msg').className = 'denied'
+
+        // Lock Start button again after stopping
+        authorised = false
+        const btn = document.getElementById('startBtn')
+        btn.disabled = true
+        btn.classList.remove('unlocked')
     }
 </script>
 

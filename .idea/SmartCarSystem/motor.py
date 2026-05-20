@@ -1,58 +1,45 @@
-def start():
-    print("Motor Started")
+import RPi.GPIO as GPIO
 
+RELAY_PIN = 17
 
-def stop():
-    print("Motor Stopped")
+class Motor:
+    def __init__(self):
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+        GPIO.setup(RELAY_PIN, GPIO.OUT)
 
+        # ✅ Motor OFF on startup
+        GPIO.output(RELAY_PIN, GPIO.LOW)
+        self.running = False
+        self.authorised = False
 
-# Raspberry Pi Code
-# import RPi.GPIO as GPIO
-#
-# PIN = 18
-# GPIO.setmode(GPIO.BCM)
-# GPIO.setup(PIN, GPIO.OUT)
-#
-# def start():
-#     GPIO.output(PIN, GPIO.HIGH)
-#
-# def stop():
-#     GPIO.output(PIN, GPIO.LOW)
+    # ---------------- START ----------------
+    def start(self):
+        print("start() called — authorised:", self.authorised)
+        GPIO.output(RELAY_PIN, GPIO.HIGH)
+        self.running = True
 
-# Code for the L298N
-#import RPi.GPIO as GPIO
+    # ---------------- STOP ----------------
+    def stop(self):
+        GPIO.output(RELAY_PIN, GPIO.LOW)
+        self.running = False
+        self.authorised = False
 
-# L298N control pins
-#IN1 = 23
-#IN2 = 24
+    # ---------------- GRANT ACCESS ----------------
+    def grant_access(self):
+        print("grant_access() called")
+        self.authorised = True
 
-#GPIO.setmode(GPIO.BCM)
-#GPIO.setup(IN1, GPIO.OUT)
-#GPIO.setup(IN2, GPIO.OUT)
+    # ---------------- DENY ACCESS ----------------
+    def deny_access(self):
+        self.authorised = False
+        self.stop()
 
-#def start():
-    #GPIO.output(IN1, GPIO.HIGH)
-    #GPIO.output(IN2, GPIO.LOW)
-    #print("Motor Started")
+    # ---------------- STATUS ----------------
+    def status(self):
+        return {"running": self.running}
 
-#def stop():
-    #GPIO.output(IN1, GPIO.LOW)
-    #GPIO.output(IN2, GPIO.LOW)
-    #print("Motor Stopped")
-
-#** Code fir using only the relay not the L298N
-#import RPi.GPIO as GPIO
-
-#RELAY_PIN = 17
-
-#GPIO.setmode(GPIO.BCM)
-#GPIO.setup(RELAY_PIN, GPIO.OUT)
-#GPIO.output(RELAY_PIN, GPIO.LOW)
-
-#def start():
-    #GPIO.output(RELAY_PIN, GPIO.HIGH)
-    #print("Motor Started")
-
-#def stop():
-    #GPIO.output(RELAY_PIN, GPIO.LOW)
-    #print("Motor Stopped")
+    # ---------------- CLEANUP ----------------
+    def cleanup(self):
+        self.stop()
+        GPIO.cleanup()

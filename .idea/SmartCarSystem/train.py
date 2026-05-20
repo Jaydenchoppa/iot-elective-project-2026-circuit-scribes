@@ -1,30 +1,63 @@
 import cv2
 import numpy as np
-from PIL import Image
 import os
 
-PHOTOS_FOLDER = 'AuthorizedFaces'
+PHOTOS_FOLDER = "AuthorizedFaces"
 
-finder = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+finder = cv2.CascadeClassifier(
+    "/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml"
+)
+
 trainer = cv2.face.LBPHFaceRecognizer_create()
 
 faces = []
-ids = []
+labels = []
+label_map = {}
+current_id = 0
 
-# Loop through every photo in the folder
-for filename in os.listdir(PHOTOS_FOLDER):
-    path = os.path.join(PHOTOS_FOLDER, filename)
+# ---------------- LOOP PEOPLE ----------------
+for person_name in os.listdir(PHOTOS_FOLDER):
+    person_path = os.path.join(PHOTOS_FOLDER, person_name)
 
-    # Open photo in grayscale
-    img = np.array(Image.open(path).convert('L'), 'uint8')
+    if not os.path.isdir(person_path):
+        continue
 
-    # Find faces and save them with ID 1 (one authorized driver)
-    for (x, y, w, h) in finder.detectMultiScale(img):
-        faces.append(img[y:y+h, x:x+w])
-        ids.append(1)
+    label_map[current_id] = person_name
 
-# Train and save the model
-trainer.train(faces, np.array(ids))
-trainer.write('trainer.yml')
+    # ---------------- LOOP IMAGES ----------------
+    for img_name in os.listdir(person_path):
+        img_path = os.path.join(person_path, img_name)
+
+        img = cv2.imread(img_path)
+        if img is None:
+            continue
+
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = cv2.resize(gray, (200, 200))
+
+        detected = finder.detectMultiScale(gray, 1.3, 5)
+
+        for (x, y, w, h) in detected:
+            face = gray[y:y+h, x:x+w]
+            face = cv2.resize(face, (200, 200))
+
+            if face.shape[0] < 50 or face.shape[1] < 50:
+                continue
+
+            faces.append(face)
+            labels.append(current_id)
+
+    current_id += 1
+
+# ---------------- SAFETY CHECK ----------------
+if len(faces) == 0:
+    print("ERROR: No faces found in training data")
+    exit()
+
+# ---------------- TRAIN ----------------
+trainer.train(faces, np.array(labels))
+trainer.write("trainer.yml")
 
 print("Training Done!")
+print("People trained:", label_map)
+print("Total faces:", len(faces))

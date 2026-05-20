@@ -1,43 +1,65 @@
-from flask import Flask, render_template, Response, jsonify
-from camera import check_face, get_frames
-import motor
+import os
+os.environ["LIBCAMERA_LOG_LEVELS"] = "3"
 
-app = Flask(__name__, template_folder='Website')
+from flask import Flask, Response, jsonify
+from camera import Camera
+from motor import Motor
+import atexit
 
-last_scan = {"allowed": False}
+app = Flask(__name__)
+camera = Camera()
+motor = Motor()  # ✅ Motor OFF on startup
 
-
-@app.route('/')
+# ---------------- HOME PAGE ----------------
+@app.route("/")
 def home():
-    return render_template('index.html')
+    return open("Website/index.html").read()
 
-
-@app.route('/live')
+# ---------------- LIVE VIDEO ----------------
+@app.route("/live")
 def live():
-    # Stream webcam footage to the webpage
-    return Response(get_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(
+        camera.generate_frames(),
+        mimetype="multipart/x-mixed-replace; boundary=frame"
+    )
 
-
-@app.route('/scan', methods=['POST'])
+# ---------------- SCAN FACE ----------------
+@app.route("/scan", methods=["POST"])
 def scan():
-    global last_scan
-    last_scan = check_face()
-    return jsonify(last_scan)
+    result = camera.check_face()
 
+    if result["allowed"]:
+        motor.grant_access()   # ✅ Unlock — Start button enables in UI
+    else:
+        motor.deny_access()    # ✅ Lock and keep motor off
 
-@app.route('/start', methods=['POST'])
+    return jsonify(result)
+
+# ---------------- START ----------------
+@app.route("/start", methods=["POST"])
 def start():
-    if last_scan["allowed"]:
+    if motor.authorised:       # ✅ Auth check here
         motor.start()
-        return jsonify({"msg": "Motor Started"})
-    return jsonify({"msg": "Access Denied"})
+        return jsonify({"msg": "Engine Started ✅", "started": True})
+    else:
+        return jsonify({"msg": "Access Denied — Scan face first ❌", "started": False})
 
-
-@app.route('/stop', methods=['POST'])
+# ---------------- STOP ----------------
+@app.route("/stop", methods=["POST"])
 def stop():
     motor.stop()
-    return jsonify({"msg": "Motor Stopped"})
+    return jsonify({"msg": "Engine Stopped ⛔"})
 
+# ---------------- CLEAN EXIT ----------------
+@atexit.register
+def cleanup():
+    motor.cleanup()
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+# ---------------- RUN SERVER ----------------
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=False,
+        threaded=True
+    )

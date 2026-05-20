@@ -1,58 +1,75 @@
 import cv2
 from datetime import datetime
-#import RPi.GPIO as GPIO
+from picamera2 import Picamera2
 
-#IR_PIN = 27  # IR LEDs moved to pin 27
+class Camera:
+    def __init__(self):
+        # ---------------- CAMERA ----------------
+        self.picam2 = Picamera2()
+        self.picam2.configure(
+            self.picam2.create_preview_configuration(
+                main={"format": "RGB888", "size": (320, 240)}
+            )
+        )
+        self.picam2.start()
 
-#GPIO.setmode(GPIO.BCM)
-#GPIO.setup(IR_PIN, GPIO.OUT)
-#GPIO.output(IR_PIN, GPIO.HIGH)  # turn LEDs on when camera starts
+        # ---------------- FACE DETECTOR ----------------
+        self.face_cascade = cv2.CascadeClassifier(
+            "/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml"
+        )
 
-# Open webcam and load face tools
-cam = cv2.VideoCapture(0)
-finder = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
-checker = cv2.face.LBPHFaceRecognizer_create()
-checker.read("trainer.yml")
+        # ---------------- TRAINED MODEL ----------------
+        self.recognizer = cv2.face.LBPHFaceRecognizer_create()
+        self.recognizer.read("trainer.yml")
 
+    # ---------------- GET FRAME ----------------
+    def get_frame(self):
+        frame = self.picam2.capture_array()
+        return cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-def check_face():
-    # Take a photo from the webcam
-    ok, photo = cam.read()
-    gray = cv2.cvtColor(photo, cv2.COLOR_BGR2GRAY)
+    # ---------------- FACE CHECK ----------------
+    def check_face(self):
+        frame = self.get_frame()
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = self.face_cascade.detectMultiScale(gray, 1.2, 5)
 
-    # Find all faces in the photo
-    faces = finder.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5)
+        allowed = False
+        who = "Unknown"
+        msg = "Access Denied"
 
-    allowed = False
-    who = "Unknown"
-    msg = "Access Denied"
+        for (x, y, w, h) in faces:
+            face = gray[y:y+h, x:x+w]
+            face = cv2.resize(face, (200, 200))
 
-    for (x, y, w, h) in faces:
-        # Check if the face matches the trained driver
-        id, score = checker.predict(gray[y:y+h, x:x+w])
+            try:
+                id_, score = self.recognizer.predict(face)
+            except:
+                continue
 
-        if score < 60:  # Low score = good match
-            allowed = True
-            who = "Authorized Driver"
-            msg = "Access Granted"
-        else:
-            allowed = False
-            who = "Unknown Driver"
-            msg = "Access Denied"
+            print("ID:", id_, "Score:", score)
 
-        # Draw a box around the face
-        cv2.rectangle(photo, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            if score < 80:
+                allowed = True
+                who = "Authorized Driver"
+                msg = "Access Granted"
 
-    now = datetime.now().strftime("%H:%M:%S")
+        return {
+            "allowed": allowed,
+            "who": who,
+            "msg": msg,
+            "time": datetime.now().strftime("%H:%M:%S")
+        }
 
-    return {"allowed": allowed, "who": who, "msg": msg, "time": now}
-
-
-def get_frames():
-    # Continuously send webcam frames to the website
-    while True:
-        ok, photo = cam.read()
-        if not ok:
-            break
-        ok, buf = cv2.imencode('.jpg', photo)
-        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buf.tobytes() + b'\r\n')
+    # ---------------- STREAM ----------------
+    def generate_frames(self):
+        while True:
+            frame = self.picam2.capture_array()
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            frame = cv2.resize(frame, (320, 240))
+            _, buffer = cv2.imencode(".jpg", frame)
+            yield (
+                    b"--frame\r\n"
+                    b"Content-Type: image/jpeg\r\n\r\n" +
+                    buffer.tobytes() +
+                    b"\r\n"
+            )
